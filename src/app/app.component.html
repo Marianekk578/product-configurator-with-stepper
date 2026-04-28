@@ -47,7 +47,9 @@
     <mat-card class="block rounded-xl p-6">
       <div class="mb-4 flex items-center justify-between">
         <h2 class="text-xl font-medium">New configuration</h2>
-        <button mat-stroked-button color="warn" (click)="showWizard = false; store.resetWizard()">Cancel</button>
+        <button mat-stroked-button color="warn" [disabled]="isSubmitting" (click)="showWizard = false; store.resetWizard()">
+          Cancel
+        </button>
       </div>
 
       <mat-stepper linear>
@@ -131,10 +133,10 @@
             <button
               mat-flat-button
               color="primary"
-              [disabled]="!canSubmit"
-              (click)="void store.submit(); showWizard = false"
+              [disabled]="!canSubmit || isSubmitting"
+              (click)="void submitOrder()"
             >
-              Order
+              {{ isSubmitting ? 'Ordering...' : 'Order' }}
             </button>
           </div>
         </mat-step>

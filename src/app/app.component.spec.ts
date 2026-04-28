@@ -1,6 +1,7 @@
 import { provideNoopAnimations } from '@angular/platform-browser/animations';
 import { ComponentFixture, TestBed, fakeAsync, tick } from '@angular/core/testing';
-import { of } from 'rxjs';
+import { of, timer } from 'rxjs';
+import { mapTo } from 'rxjs/operators';
 import { AppComponent } from './app.component';
 import { ProductApiService } from './services/product-api.service';
 
@@ -102,5 +103,33 @@ describe('AppComponent', () => {
 
     const optionText = fixture.nativeElement.textContent as string;
     expect(optionText).not.toContain('GPU-AMD-64');
+  }));
+
+  it('keeps wizard open while order submission is pending', fakeAsync(() => {
+    const api = TestBed.inject(ProductApiService) as unknown as MockProductApiService;
+    api.createConfiguration.and.returnValue(
+      timer(200).pipe(
+        mapTo({ id: 'cfg-3', storeName: 'Seattle North', productType: 'pc', totalPrice: 1200, createdAt: '2026-04-18' })
+      )
+    );
+
+    fixture.componentInstance.showWizard = true;
+    fixture.componentInstance.store.productType.set('raspberry-pi');
+    fixture.componentInstance.store.storeName.set('Seattle North');
+    fixture.componentInstance.store.selectedPiSku.set('PI-8-128');
+    fixture.detectChanges();
+
+    fixture.componentInstance.submitOrder();
+    tick(100);
+    fixture.detectChanges();
+
+    expect(fixture.componentInstance.showWizard).toBeTrue();
+    expect(fixture.componentInstance.isSubmitting).toBeTrue();
+
+    tick(100);
+    fixture.detectChanges();
+
+    expect(fixture.componentInstance.showWizard).toBeFalse();
+    expect(fixture.componentInstance.isSubmitting).toBeFalse();
   }));
 });

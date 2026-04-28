@@ -29,6 +29,7 @@ import { ConfiguratorStore } from './state/configurator.store';
 export class AppComponent {
   readonly store = inject(ConfiguratorStore);
   showWizard = false;
+  isSubmitting = false;
 
   constructor() {
     void this.store.loadInitialData();
@@ -40,5 +41,19 @@ export class AppComponent {
     }
 
     return this.store.productType() === 'pc' ? !!this.store.selectedPcOption() : !!this.store.selectedPiOption();
+  }
+
+  async submitOrder(): Promise<void> {
+    if (!this.canSubmit || this.isSubmitting) {
+      return;
+    }
+
+    this.isSubmitting = true;
+    try {
+      await this.store.submit();
+      this.showWizard = false;
+    } finally {
+      this.isSubmitting = false;
+    }
   }
 }
