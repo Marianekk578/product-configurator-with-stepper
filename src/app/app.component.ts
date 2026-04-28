@@ -1,0 +1,38 @@
+import { CommonModule, CurrencyPipe, DatePipe, TitleCasePipe } from '@angular/common';
+import { Component, inject } from '@angular/core';
+import { FormsModule } from '@angular/forms';
+import { MatButtonModule } from '@angular/material/button';
+import { MatCardModule } from '@angular/material/card';
+import { MatInputModule } from '@angular/material/input';
+import { MatSelectModule } from '@angular/material/select';
+import { MatStepperModule } from '@angular/material/stepper';
+import { ConfiguratorStore } from './state/configurator.store';
+
+@Component({
+  selector: 'app-root',
+  imports: [
+    CommonModule,
+    FormsModule,
+    MatButtonModule,
+    MatCardModule,
+    MatInputModule,
+    MatSelectModule,
+    MatStepperModule,
+    CurrencyPipe,
+    DatePipe,
+    TitleCasePipe
+  ],
+  templateUrl: './app.component.html'
+})
+export class AppComponent {
+  readonly store = inject(ConfiguratorStore);
+  showWizard = false;
+
+  constructor() {
+    void this.store.loadInitialData();
+  }
+
+  get canSubmit(): boolean {
+    return !!this.store.storeName().trim() && this.store.canSubmit();
+  }
+}
