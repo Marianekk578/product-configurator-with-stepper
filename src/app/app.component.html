@@ -1,0 +1,144 @@
+<main class="mx-auto max-w-6xl p-8">
+  <h1 class="mb-6 text-3xl font-semibold text-slate-900">Store Product Configurator</h1>
+
+  <mat-card class="mb-6 block rounded-xl p-6">
+    <div class="mb-4 flex items-center justify-between gap-3">
+      <h2 class="text-xl font-medium">Existing configurations</h2>
+      <button mat-flat-button color="primary" (click)="showWizard = true">Create configuration</button>
+    </div>
+
+    <div class="mb-4">
+      <mat-form-field appearance="outline" class="w-full">
+        <mat-label>Filter by store name</mat-label>
+        <input
+          matInput
+          [ngModel]="store.storeFilter()"
+          (ngModelChange)="store.storeFilter.set($event)"
+          placeholder="e.g. Seattle"
+        />
+      </mat-form-field>
+    </div>
+
+    <div class="overflow-x-auto">
+      <table class="w-full text-left text-sm">
+        <thead class="border-b border-slate-200 text-slate-500">
+          <tr>
+            <th class="py-2">Store</th>
+            <th class="py-2">Product</th>
+            <th class="py-2">Total</th>
+            <th class="py-2">Created</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (config of store.filteredConfigurations(); track config.id) {
+            <tr class="border-b border-slate-100">
+              <td class="py-2">{{ config.storeName }}</td>
+              <td class="py-2">{{ config.productType | titlecase }}</td>
+              <td class="py-2">{{ config.totalPrice | currency:'USD' }}</td>
+              <td class="py-2">{{ config.createdAt | date }}</td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  </mat-card>
+
+  @if (showWizard) {
+    <mat-card class="block rounded-xl p-6">
+      <div class="mb-4 flex items-center justify-between">
+        <h2 class="text-xl font-medium">New configuration</h2>
+        <button mat-stroked-button color="warn" (click)="showWizard = false; store.resetWizard()">Cancel</button>
+      </div>
+
+      <mat-stepper linear>
+        <mat-step [completed]="!!store.productType()">
+          <ng-template matStepLabel>Choose product</ng-template>
+          <div class="grid gap-4 md:grid-cols-2">
+            <button mat-raised-button (click)="store.chooseProduct('pc')" [color]="store.productType() === 'pc' ? 'primary' : undefined">
+              Full PC (with subproducts)
+            </button>
+            <button mat-raised-button (click)="store.chooseProduct('raspberry-pi')" [color]="store.productType() === 'raspberry-pi' ? 'primary' : undefined">
+              Raspberry PI
+            </button>
+          </div>
+          <div class="mt-6">
+            <button mat-flat-button matStepperNext color="primary" [disabled]="!store.productType()">Next</button>
+          </div>
+        </mat-step>
+
+        <mat-step [completed]="!!store.selectedPcOption() || !!store.selectedPiOption()">
+          <ng-template matStepLabel>Pick SKU</ng-template>
+
+          <mat-form-field appearance="outline" class="mb-3 w-full">
+            <mat-label>Store name</mat-label>
+            <input matInput [ngModel]="store.storeName()" (ngModelChange)="store.storeName.set($event)" />
+          </mat-form-field>
+
+          @if (store.productType() === 'pc') {
+            <mat-form-field appearance="outline" class="w-full">
+              <mat-label>PC GPU / memory SKU</mat-label>
+              <mat-select [ngModel]="store.selectedPcSku()" (ngModelChange)="store.selectedPcSku.set($event)">
+                @for (option of store.availablePcOptions(); track option.sku) {
+                  <mat-option [value]="option.sku">{{ option.sku }} · {{ option.provider }} · {{ option.memoryGb }}GB · {{ option.price | currency:'USD' }}</mat-option>
+                }
+              </mat-select>
+            </mat-form-field>
+            <p class="mt-2 text-xs text-slate-500">Constraint: AMD 64GB is not available for stores containing "Downtown".</p>
+          } @else {
+            <mat-form-field appearance="outline" class="w-full">
+              <mat-label>Raspberry PI variant</mat-label>
+              <mat-select [ngModel]="store.selectedPiSku()" (ngModelChange)="store.selectedPiSku.set($event)">
+                @for (option of store.piOptions(); track option.sku) {
+                  <mat-option [value]="option.sku">{{ option.sku }} · {{ option.memoryGb }}GB RAM · {{ option.diskGb }}GB disk · {{ option.price | currency:'USD' }}</mat-option>
+                }
+              </mat-select>
+            </mat-form-field>
+          }
+
+          <div class="mt-6 flex gap-2">
+            <button mat-stroked-button matStepperPrevious>Back</button>
+            <button
+              mat-flat-button
+              matStepperNext
+              color="primary"
+              [disabled]="!(store.storeName().trim() && (store.selectedPcOption() || store.selectedPiOption()))"
+            >
+              Next
+            </button>
+          </div>
+        </mat-step>
+
+        <mat-step>
+          <ng-template matStepLabel>Review & order</ng-template>
+          <div class="space-y-2 rounded-lg bg-slate-50 p-4 text-sm">
+            <p><strong>Store:</strong> {{ store.storeName() }}</p>
+            <p><strong>Product:</strong> {{ store.productType() | titlecase }}</p>
+            @if (store.selectedPcOption(); as pc) {
+              <p><strong>SKU:</strong> {{ pc.sku }}</p>
+              <p><strong>Provider:</strong> {{ pc.provider }}</p>
+              <p><strong>Memory:</strong> {{ pc.memoryGb }} GB</p>
+            }
+            @if (store.selectedPiOption(); as pi) {
+              <p><strong>SKU:</strong> {{ pi.sku }}</p>
+              <p><strong>RAM:</strong> {{ pi.memoryGb }} GB</p>
+              <p><strong>Disk:</strong> {{ pi.diskGb }} GB</p>
+            }
+            <p class="text-base"><strong>Total:</strong> {{ store.totalPrice() | currency:'USD' }}</p>
+          </div>
+
+          <div class="mt-6 flex gap-2">
+            <button mat-stroked-button matStepperPrevious>Back</button>
+            <button
+              mat-flat-button
+              color="primary"
+              [disabled]="!canSubmit"
+              (click)="void store.submit(); showWizard = false"
+            >
+              Order
+            </button>
+          </div>
+        </mat-step>
+      </mat-stepper>
+    </mat-card>
+  }
+</main>
